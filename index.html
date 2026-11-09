@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<!--
+  NARMELA CAFFE — Digital QR Menu
+  Single file: HTML + CSS + vanilla JS. Works on GitHub Pages (just upload as index.html).
+
+  HOW TO EDIT
+  1. Products   -> edit the PRODUCTS array in the <script> (search for "PRODUCTS").
+  2. Categories -> edit CATEGORIES.
+  3. Photos     -> set `img: "images/latte.jpg"` on a product, OR set CONFIG.photoDir = "images/" and
+                   add images/<product id>.jpg (e.g. images/latte.jpg). No photo = the drawn picture.
+  4. Texts      -> edit I18N (interface) and CONFIG (cafe info, currency).
+  5. Availability -> set `available: false` on any product.
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NARMELA CAFFE</title>
+<meta name="theme-color" content="#78816A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23B96648'/%3E%3Ctext x='32' y='43' font-size='34' text-anchor='middle' font-family='Georgia,serif' fill='%23161616'%3EN%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500;600&family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============ 1. DESIGN TOKENS (change the colours here) ============ */
+:root{
+  --charcoal:#252321;        /* header, footer, main text */
+  --cream:#F1E9DC;           /* page background */
+  --terracotta:#B96648;      /* prices, selected states, primary buttons */
+  --olive:#78816A;           /* secondary buttons, subtle details */
+  --white:#FFFFFF;           /* product cards */
+  --cream-deep:#E4D8C5;      /* hairlines, placeholders */
+  --ink-soft:#6B635A;        /* secondary text */
+  --radius:18px;
+  --font-latin:"Cormorant Garamond","Times New Roman",serif;                 /* wordmark */
+  --font-body:"DM Sans","Vazirmatn","Segoe UI",Tahoma,system-ui,sans-serif;  /* English */
+  --font-fa:"Vazirmatn","DM Sans","Segoe UI",Tahoma,system-ui,sans-serif;    /* Persian */
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--font-body);background:var(--cream);color:var(--charcoal);line-height:1.65;min-height:100vh;overflow-x:clip}
+html[lang="fa"] body{font-family:var(--font-fa)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;-webkit-tap-highlight-color:transparent}
+button:active,.btn:active{transform:scale(.97)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--terracotta);outline-offset:3px;border-radius:8px}
+.wrap{width:min(1120px,100% - 32px);margin-inline:auto;position:relative}
+#menu,#visit{scroll-margin-top:200px}
+
+/* ============ 2. HEADER ============ */
+.masthead{background:var(--charcoal);color:var(--cream);padding-top:env(safe-area-inset-top,0px);position:relative;overflow:hidden}
+.masthead::before{content:"";position:absolute;width:230px;height:230px;border-radius:50%;border:1px solid rgba(120,129,106,.55);inset-inline-end:-80px;top:-120px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:60px}
+.wordmark{direction:ltr;font-family:var(--font-latin);font-weight:600;font-size:1.3rem;letter-spacing:.2em;text-decoration:none;white-space:nowrap}
+.wordmark span{color:var(--terracotta);font-size:.78em;letter-spacing:.34em}
+.nav{display:none;gap:28px;margin-inline-start:auto;margin-inline-end:22px}
+.nav a{font-size:.88rem;text-decoration:none;opacity:.75;padding:4px 0;border-bottom:1px solid transparent;transition:opacity .25s,border-color .25s}
+.nav a:hover{opacity:1;border-color:var(--terracotta)}
+.bar-end{display:flex;align-items:center;gap:8px}
+.pin{width:36px;height:36px;border-radius:50%;border:1px solid rgba(241,233,220,.3);display:grid;place-items:center;transition:background .25s}
+.pin svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pin:hover,.lang-btn:hover{background:var(--terracotta);border-color:var(--terracotta)}
+.lang-btn{min-width:52px;height:36px;padding:0 14px;border:1px solid rgba(241,233,220,.3);border-radius:99px;font-size:.85rem;font-weight:500;letter-spacing:.04em;transition:background .25s,border-color .25s,transform .15s}
+.hero{padding:2px 0 24px}
+.tagline{position:relative;padding-top:14px;max-width:32ch;font-size:clamp(1.05rem,4.2vw,1.4rem);font-weight:300;line-height:1.5}
+.tagline::before{content:"";position:absolute;top:0;inset-inline-start:0;width:34px;height:2px;background:var(--terracotta)}
+@media (max-width:380px){.wordmark{font-size:1.1rem;letter-spacing:.14em}.wordmark span{letter-spacing:.22em}.bar{gap:8px}}
+
+/* ============ 3. SEARCH + CATEGORY CARDS ============ */
+.controls{position:sticky;top:0;z-index:20;background:rgba(241,233,220,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:calc(env(safe-area-inset-top,0px) + 12px) 0 8px;border-bottom:1px solid transparent;transition:border-color .3s}
+.controls.stuck{border-color:var(--cream-deep)}
+@media (max-height:699px){.controls{position:static}}
+.search{position:relative}
+.search svg{position:absolute;inset-inline-start:16px;top:50%;translate:0 -50%;width:18px;height:18px;color:var(--ink-soft);pointer-events:none;transition:color .25s}
+.search:focus-within svg{color:var(--terracotta)}
+.search input{width:100%;height:48px;border-radius:99px;border:1px solid var(--cream-deep);background:var(--white);padding-inline:46px;font-size:.96rem;transition:border-color .25s,box-shadow .25s;-webkit-appearance:none;appearance:none}
+.search input::placeholder{color:#9A9082}
+.search input:focus{outline:none;border-color:var(--terracotta);box-shadow:0 0 0 4px rgba(185,102,72,.14)}
+.search input::-webkit-search-cancel-button{display:none}
+.clear{position:absolute;inset-inline-end:9px;top:50%;translate:0 -50%;width:30px;height:30px;border-radius:50%;background:var(--cream);font-size:1rem;line-height:1;display:none}
+.clear.show{display:block}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;scroll-snap-align:center;width:82px;min-height:84px;padding:9px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:16px;border:1px solid var(--cream-deep);background:#FAF5EB;color:var(--charcoal);font-size:.7rem;line-height:1.35;text-align:center;transition:background .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease),transform .15s}
+.chip i{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:var(--cream);transition:background .25s var(--ease)}
+.chip svg{width:20px;height:20px;fill:none;stroke:var(--olive);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke .25s}
+.chip span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.chip:active{transform:scale(.95)}
+.chip[aria-pressed="true"]{background:var(--terracotta);border-color:var(--terracotta);color:var(--white);font-weight:600}
+.chip[aria-pressed="true"] i{background:rgba(255,255,255,.2)}
+.chip[aria-pressed="true"] svg{stroke:var(--white)}
+@media (hover:hover){.chip:not([aria-pressed="true"]):hover{border-color:var(--olive)}}
+.options{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 0;font-size:.82rem;color:var(--ink-soft)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;color:var(--charcoal)}
+.switch .track{width:34px;height:20px;border-radius:99px;background:var(--cream-deep);position:relative;transition:background .25s}
+.switch .track::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:14px;height:14px;border-radius:50%;background:var(--white);transition:inset-inline-start .25s var(--ease)}
+.switch[aria-pressed="true"] .track{background:var(--olive)}
+.switch[aria-pressed="true"] .track::after{inset-inline-start:17px}
+
+/* ============ 4. MENU: editorial headings + product cards ============ */
+main{padding:6px 0 56px}
+.category{margin-top:30px}
+.cat-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.cat-head h2{font-size:clamp(1.35rem,5vw,1.8rem);font-weight:600;line-height:1.25}
+.cat-head span{font-size:.8rem;font-weight:300;color:var(--ink-soft);white-space:nowrap}
+.cat-head::after{content:"";flex:1;height:1px;background:var(--cream-deep);align-self:center;order:3}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.item{display:flex;flex-direction:column;background:var(--white);border-radius:var(--radius);overflow:hidden;animation:rise .45s var(--ease) both;animation-delay:calc(min(var(--i,0),12) * 35ms);transition:transform .3s var(--ease)}
+.thumb{aspect-ratio:1/1;width:100%;background:var(--cream-deep);position:relative;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--ease)}
+.thumb:not(.ld)::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 1.3s linear infinite}
+.info{padding:12px 12px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.name{font-weight:600;font-size:.98rem;line-height:1.4}
+.desc{font-size:.8rem;font-weight:300;line-height:1.55;color:var(--ink-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.price{margin-top:auto;padding-top:8px;color:var(--terracotta);font-weight:600;font-size:1.05rem;white-space:nowrap}
+.price small{font-size:.72rem;font-weight:400;color:var(--ink-soft);margin-inline-start:4px}
+.badge{position:absolute;z-index:2;inset-block-start:10px;inset-inline-start:10px;padding:2px 12px;border-radius:99px;font-size:.72rem;font-weight:500;background:var(--charcoal);color:var(--cream)}
+.item.off .thumb img{filter:grayscale(1);opacity:.5}
+.item.off .name,.item.off .desc,.item.off .price{color:#8C857A}
+@media (hover:hover){.item:hover{transform:translateY(-4px)}.item:hover .thumb img{transform:scale(1.05)}}
+@media (min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.info{padding:14px 16px 16px}.name{font-size:1.04rem}}
+@media (min-width:960px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.nav{display:flex}.pin{display:none}.wordmark{font-size:1.5rem}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (min-width:640px){.nav{display:flex}.pin{display:none}}
+
+/* ============ 5. EMPTY STATE ============ */
+.empty{text-align:center;padding:56px 12px 40px;animation:rise .5s var(--ease) both}
+.empty .cup{width:92px;height:92px;margin:0 auto 18px;display:block}
+.empty h3{font-size:1.2rem;font-weight:600}
+.empty p{color:var(--ink-soft);font-size:.92rem;margin:6px auto 20px;max-width:30ch}
+.empty button{height:44px;padding:0 24px;border-radius:99px;background:var(--charcoal);color:var(--cream);font-size:.9rem;transition:background .25s,transform .15s}
+.empty button:hover{background:var(--terracotta)}
+
+/* ============ 6. CAFE INFORMATION ============ */
+.visit{padding:10px 0 56px}
+.visit h2{font-size:clamp(1.35rem,5vw,1.8rem);font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.visit h2::after{content:"";flex:1;height:1px;background:var(--cream-deep)}
+.visit-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.box{background:var(--white);border-radius:var(--radius);padding:20px}
+.box[hidden]{display:none}
+.box-label{font-size:.78rem;color:var(--olive);font-weight:600;margin-bottom:6px}
+.box p{font-size:.95rem}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;margin-top:14px;padding:0 22px;border-radius:99px;background:var(--terracotta);color:var(--white);text-decoration:none;font-size:.9rem;font-weight:500;text-align:center;transition:background .25s,color .25s,transform .15s}
+.btn-row .btn{margin-top:0;flex:1 1 auto}
+.btn:hover{background:#9f523a}
+.btn.ghost{background:transparent;color:var(--charcoal);border:1px solid var(--olive)}
+.btn.ghost:hover{background:var(--olive);color:var(--white)}
+.btn svg{width:18px;height:18px;flex:none}
+.phone{display:block;font-size:1.2rem;font-weight:500;text-decoration:none;unicode-bidi:plaintext}
+.phone+.phone{margin-top:6px}
+
+/* ============ 7. FOOTER ============ */
+footer{background:var(--charcoal);color:var(--cream);padding:40px 0 calc(32px + env(safe-area-inset-bottom,0px));text-align:center;position:relative;overflow:hidden}
+footer::before{content:"";display:block;width:34px;height:2px;background:var(--terracotta);margin:0 auto 22px}
+footer .wordmark{display:inline-block;font-size:1.4rem}
+footer p,footer a.f-insta{display:block;font-size:.85rem;font-weight:300;margin-top:8px;opacity:.85}
+footer a.f-insta{text-decoration:none;direction:ltr;color:var(--cream)}
+footer a.f-insta:hover{color:var(--terracotta);opacity:1}
+footer .copy{margin-top:22px;font-size:.75rem;opacity:.55;direction:ltr}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+/* ============ NARMELA MENU V4 — REFERENCE CARD REFINEMENT ============ */
+.masthead{padding-bottom:4px}
+.bar{height:58px}
+.controls{padding-top:10px;background:rgba(241,233,220,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.chips{gap:9px;padding:10px 2px 8px}
+.chip{width:76px;min-height:74px;padding:7px 5px 7px;gap:5px;border-radius:15px;background:rgba(255,255,255,.42)}
+.chip i{width:30px;height:30px;border-radius:10px;background:rgba(120,129,106,.10)}
+.chip svg{width:20px;height:20px}
+.chip span{font-size:.69rem;line-height:1.3}
+main{padding:8px 0 54px}
+.category{margin-top:28px}
+.cat-head{margin-bottom:15px}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.item{
+  min-width:0;
+  min-height:330px;
+  background:rgba(255,255,255,.52);
+  border:1px solid #ded4c6;
+  border-radius:19px;
+  box-shadow:0 2px 5px rgba(37,35,33,.035);
+  overflow:hidden;
+}
+.thumb{
+  width:112px;
+  height:112px;
+  aspect-ratio:1;
+  flex:none;
+  margin:19px auto 7px;
+  border-radius:50%;
+  border:1px solid #e0d6c8;
+  background:#f2ecdf;
+  display:grid;
+  place-items:center;
+}
+.thumb img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:5px;
+  border-radius:50%;
+  transition:transform .35s var(--ease);
+}
+.thumb:not(.ld)::before{display:none}
+.info{
+  padding:9px 12px 15px;
+  text-align:center;
+  align-items:center;
+  gap:5px;
+}
+.name{font-size:.93rem;line-height:1.45;min-height:1.45em}
+.subname{
+  min-height:1.25em;
+  font-family:var(--font-body);
+  font-size:.73rem;
+  line-height:1.35;
+  color:#8a8278;
+  direction:ltr;
+  text-align:center;
+}
+.desc{
+  min-height:2.9em;
+  margin-top:2px;
+  font-size:.73rem;
+  line-height:1.6;
+  -webkit-line-clamp:2;
+  text-align:center;
+}
+.price{
+  margin-top:auto;
+  padding:7px 12px;
+  border-radius:99px;
+  background:rgba(120,129,106,.13);
+  color:#69735d;
+  font-size:.88rem;
+  line-height:1.4;
+}
+.price small{color:#69735d;font-size:.69rem}
+.badge{inset-block-start:8px;inset-inline-start:8px;font-size:.66rem}
+.visit{padding-top:8px}
+.box{
+  border:1px solid rgba(222,212,198,.9);
+  background:rgba(255,255,255,.55);
+  box-shadow:0 2px 5px rgba(37,35,33,.03);
+}
+@media (min-width:560px){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+  .item{min-height:350px}
+  .thumb{width:120px;height:120px;margin-top:20px}
+  .info{padding-inline:14px}
+}
+@media (min-width:960px){
+  .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:19px}
+  .item{min-height:355px}
+}
+@media (max-width:380px){
+  .grid{gap:10px}
+  .item{min-height:318px;border-radius:16px}
+  .thumb{width:96px;height:96px;margin-top:15px}
+  .info{padding-inline:9px}
+  .name{font-size:.86rem}
+  .subname{font-size:.68rem}
+  .desc{font-size:.69rem}
+  .price{font-size:.8rem;padding:6px 9px}
+}
+
+
+/* ============ NARMELA ENTRY GATE — PISTACHIO GLASS ============ */
+.entry-screen[hidden],#siteContent[hidden]{display:none!important}
+.entry-screen{
+  min-height:100svh; min-height:100vh; width:100%; position:relative; isolation:isolate;
+  display:grid; place-items:center; overflow:hidden; padding:28px 18px;
+  background:
+    radial-gradient(ellipse at 50% 12%, rgba(174,190,145,.42), transparent 44%),
+    radial-gradient(ellipse at 8% 85%, rgba(120,129,106,.22), transparent 38%),
+    linear-gradient(145deg,#252a22 0%,#414a38 36%,#dce1cf 72%,#f1e9dc 100%);
+}
+.entry-screen::before,.entry-screen::after{content:"";position:absolute;z-index:-1;border-radius:50%;pointer-events:none}
+.entry-screen::before{width:min(78vw,620px);aspect-ratio:1;inset-inline-start:-24%;top:-25%;border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 32px rgba(255,255,255,.025),0 0 0 70px rgba(255,255,255,.02)}
+.entry-screen::after{width:min(70vw,520px);aspect-ratio:1;inset-inline-end:-22%;bottom:-30%;background:rgba(210,220,190,.15);filter:blur(4px)}
+.entry-glow{position:absolute;border-radius:50%;filter:blur(55px);z-index:-1;pointer-events:none}
+.entry-glow-one{width:260px;height:260px;top:8%;inset-inline-end:8%;background:rgba(184,199,154,.25)}
+.entry-glow-two{width:300px;height:300px;bottom:2%;inset-inline-start:2%;background:rgba(241,233,220,.28)}
+.entry-card{
+  width:min(100%,490px); min-height:560px; padding:46px 34px 30px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; border-radius:34px; position:relative; overflow:hidden;
+  color:#252a22; background:linear-gradient(145deg,rgba(255,255,255,.64),rgba(247,246,235,.34));
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 0 -1px 0 rgba(120,129,106,.12),0 28px 80px rgba(20,28,18,.24);
+  -webkit-backdrop-filter:blur(28px) saturate(145%);backdrop-filter:blur(28px) saturate(145%);
+}
+.entry-card::before{content:"";position:absolute;inset:8px;border:1px solid rgba(255,255,255,.38);border-radius:27px;pointer-events:none}
+.entry-mark{width:104px;height:104px;border-radius:32px;display:grid;place-items:center;color:#4f6047;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(222,231,207,.62));border:1px solid rgba(255,255,255,.85);box-shadow:0 12px 30px rgba(46,60,38,.12),inset 0 1px 0 white;margin-bottom:18px}
+.entry-mark svg{width:70px;height:70px}
+.entry-brand{font-family:var(--font-latin);font-size:1.55rem;font-weight:600;letter-spacing:.22em;direction:ltr;line-height:1.2}
+.entry-brand span{color:#78816a;font-size:.72em;letter-spacing:.28em}
+.entry-kicker{font-size:.68rem;letter-spacing:.34em;font-weight:600;color:#69735d;margin-top:12px}
+.entry-slogan{font-family:var(--font-latin);font-size:1.5rem;line-height:1.25;font-weight:600;color:#353b30;margin-top:31px}
+.entry-slogan-fa{font-size:1.02rem;font-weight:600;color:#505b47;margin-top:9px;line-height:1.9}
+.entry-button{width:100%;min-height:62px;margin-top:36px;padding:10px 18px;border-radius:19px;display:flex;align-items:center;justify-content:center;gap:12px;color:#fff;background:linear-gradient(135deg,#788b68,#5e7052);border:1px solid rgba(255,255,255,.7);box-shadow:0 12px 28px rgba(74,94,61,.25),inset 0 1px 0 rgba(255,255,255,.35);font-size:.98rem;font-weight:700;transition:transform .2s,box-shadow .2s,filter .2s}
+.entry-button:hover{transform:translateY(-2px);filter:brightness(1.04);box-shadow:0 16px 32px rgba(74,94,61,.3),inset 0 1px 0 rgba(255,255,255,.4)}
+.entry-button:active{transform:scale(.98)}
+.entry-button-icon{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.28)}
+.entry-button-icon svg{width:21px;height:21px}
+.entry-arrow{font-size:1.2rem;opacity:.85}
+.entry-footnote{font-size:.62rem;letter-spacing:.28em;color:#74806a;margin-top:26px;font-weight:600}
+@media(max-width:480px){
+ .entry-screen{padding:18px 16px}
+ .entry-card{min-height:540px;padding:38px 24px 26px;border-radius:29px}
+ .entry-mark{width:92px;height:92px;border-radius:28px}
+ .entry-mark svg{width:62px;height:62px}
+ .entry-brand{font-size:1.35rem}
+ .entry-slogan{font-size:1.38rem;margin-top:28px}
+ .entry-slogan-fa{font-size:.94rem}
+ .entry-button{min-height:58px;font-size:.9rem;margin-top:31px}
+}
+@media(prefers-reduced-motion:reduce){.entry-button{transition:none}}
+
+
+/* ============ NARMELA PISTACHIO ACCENT PASS ============ */
+:root{
+  --olive-soft:#e4e9dc;
+  --olive-mid:#899477;
+  --olive-deep:#59664e;
+}
+.controls{background:rgba(228,233,220,.94);border-bottom-color:rgba(120,129,106,.16)}
+.search input{border-color:rgba(120,129,106,.28);background:rgba(255,255,255,.82)}
+.search input:focus{border-color:var(--olive);box-shadow:0 0 0 4px rgba(120,129,106,.15)}
+.search:focus-within svg{color:var(--olive-deep)}
+.chip{border-color:rgba(120,129,106,.24);background:rgba(248,249,243,.78)}
+.chip i{background:rgba(120,129,106,.13)}
+.chip[aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:#fff}
+.chip[aria-pressed="true"] i{background:rgba(255,255,255,.2)}
+.cat-head::after,.visit h2::after{background:rgba(120,129,106,.30)}
+.cat-head h2{color:var(--olive-deep)}
+.item{background:rgba(249,250,245,.78);border-color:rgba(120,129,106,.25);box-shadow:0 3px 12px rgba(65,77,54,.045)}
+.thumb{background:linear-gradient(145deg,#f0f2e8,#e5e9dc);border-color:rgba(120,129,106,.23)}
+.price{background:rgba(120,129,106,.17);color:var(--olive-deep)}
+.price small{color:var(--olive-deep)}
+.box{background:linear-gradient(145deg,rgba(250,251,246,.92),rgba(229,234,221,.72));border-color:rgba(120,129,106,.28);box-shadow:0 5px 18px rgba(65,77,54,.055)}
+.box-label{color:var(--olive-deep)}
+.btn{background:var(--olive);box-shadow:0 5px 14px rgba(89,102,78,.13)}
+.btn:hover{background:var(--olive-deep)}
+.btn.ghost{color:var(--olive-deep);border-color:rgba(120,129,106,.55);background:rgba(255,255,255,.38)}
+.btn.ghost:hover{background:var(--olive);color:#fff}
+.phone{color:var(--olive-deep)}
+footer{background:linear-gradient(145deg,#252a22 0%,#343d2e 58%,#46523d 100%)}
+footer::before{background:#a8b596}
+footer .f-insta:hover{color:#c8d2b9}
+.footer-phones{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin-top:15px;color:rgba(241,233,220,.6);font-size:.92rem}
+.footer-phones a{color:#e5eadc;text-decoration:none;direction:ltr;font-weight:500;letter-spacing:.035em;padding:7px 12px;border:1px solid rgba(220,231,207,.24);border-radius:99px;background:rgba(220,231,207,.08);transition:background .2s,border-color .2s}
+.footer-phones a:hover{background:rgba(220,231,207,.18);border-color:rgba(220,231,207,.5)}
+.entry-screen{background:radial-gradient(ellipse at 50% 12%,rgba(174,190,145,.48),transparent 44%),radial-gradient(ellipse at 8% 85%,rgba(120,129,106,.28),transparent 38%),linear-gradient(145deg,#30392b 0%,#566348 36%,#dce4d2 72%,#f1e9dc 100%)}
+.entry-card{background:linear-gradient(145deg,rgba(255,255,255,.70),rgba(231,237,222,.48));border-color:rgba(255,255,255,.78)}
+.entry-mark{background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(222,231,207,.78));color:var(--olive-deep)}
+.entry-button{background:linear-gradient(135deg,#879675,#596b4e);box-shadow:0 12px 28px rgba(74,94,61,.27),inset 0 1px 0 rgba(255,255,255,.38)}
+.entry-kicker,.entry-footnote{color:var(--olive-deep)}
+@media(max-width:480px){.footer-phones{gap:7px;font-size:.84rem}.footer-phones a{padding:7px 10px}}
+
+</style>
+</head>
+
+<body>
+
+<!-- ============ NARMELA ENTRY SCREEN ============ -->
+<section class="entry-screen" id="entryScreen" aria-labelledby="entryTitle">
+  <div class="entry-glow entry-glow-one" aria-hidden="true"></div>
+  <div class="entry-glow entry-glow-two" aria-hidden="true"></div>
+  <div class="entry-card">
+    <div class="entry-mark" aria-hidden="true">
+      <svg viewBox="0 0 96 96" role="img">
+        <path d="M31 37h32v22a16 16 0 0 1-16 16h0a16 16 0 0 1-16-16V37Z" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
+        <path d="M63 43h7a9 9 0 0 1 0 18h-8M39 27c-5-6 5-8 1-15M51 27c-5-6 5-8 1-15" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M26 79h48" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M39 48h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+      </svg>
+    </div>
+    <div class="entry-brand">NARMELA <span>CAFFE</span></div>
+    <p class="entry-kicker" id="entryTitle">YOUR COMFORT ZONE</p>
+    <div class="entry-slogan" lang="en" dir="ltr">Where Every Cup Tells a Story.</div>
+    <div class="entry-slogan-fa" lang="fa" dir="rtl">جایی که هر لیوان، داستان خودش را روایت می‌کند.</div>
+    <button class="entry-button" id="enterCafe" type="button">
+      <span class="entry-button-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17M8 5c-1-1 1-2 0-3M13 5c-1-1 1-2 0-3"/></svg>
+      </span>
+      <span>ورود به منوی کافه نارملا</span>
+      <span class="entry-arrow" aria-hidden="true">←</span>
+    </button>
+    <div class="entry-footnote">COFFEE · CALM · CONNECTION</div>
+  </div>
+</section>
+
+<div id="siteContent" hidden>
+<!-- ============ HEADER ============ -->
+<header class="masthead">
+  <div class="wrap">
+    <div class="bar">
+      <a class="wordmark" href="#" aria-label="NARMELA CAFFE">NARMELA <span>CAFFE</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="#controls" data-i18n="navMenu"></a>
+        <a href="#visit" data-i18n="navVisit"></a>
+        <a href="https://www.instagram.com/Narmela_Caffe/" target="_blank" rel="noopener">Instagram</a>
+      </nav>
+      <div class="bar-end">
+        <a class="pin" href="#visit" aria-label="Address"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></a>
+        <button class="lang-btn" id="langBtn" type="button" aria-label="Change language"></button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ SEARCH + FILTERS ============ -->
+<div class="controls" id="controls">
+  <div class="wrap">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" autocomplete="off" enterkeyhint="search">
+      <button class="clear" id="clear" type="button">×</button>
+    </div>
+    <nav class="chips" id="chips"></nav>
+    <div class="options">
+      <span id="count" aria-live="polite"></span>
+      <button class="switch" id="availSwitch" type="button" aria-pressed="false"><span class="track"></span><span data-i18n="onlyAvailable"></span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MENU ============ -->
+<main class="wrap" id="menu" aria-live="polite"></main>
+
+<!-- ============ VISIT US ============ -->
+<section class="visit wrap" id="visit" aria-labelledby="visitTitle">
+  <h2 id="visitTitle" data-i18n="visitTitle"></h2>
+  <div class="visit-grid">
+    <div class="box">
+      <p class="box-label" data-i18n="addressLabel"></p>
+      <p id="visitAddress"></p>
+      <div class="btn-row"><a class="btn" id="mapBtn" target="_blank" rel="noopener" data-i18n="directions"></a><a class="btn ghost" id="gmapBtn" target="_blank" rel="noopener" data-i18n="googleMaps"></a></div>
+    </div>
+    <div class="box" id="phoneBox" hidden>
+      <p class="box-label" data-i18n="phoneLabel"></p>
+      <div id="phoneList"></div>
+    </div>
+    <div class="box">
+      <p class="box-label" data-i18n="reviewsTitle"></p>
+      <p data-i18n="reviewsText"></p>
+      <a class="btn ghost" id="reviewsBtn" target="_blank" rel="noopener" data-i18n="reviewsBtn"></a>
+    </div>
+    <div class="box">
+      <p class="box-label" data-i18n="instaLabel"></p>
+      <a class="btn ghost" href="https://www.instagram.com/Narmela_Caffe/" target="_blank" rel="noopener" dir="ltr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1" fill="currentColor" stroke="none"/></svg>@Narmela_Caffe</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="wordmark">NARMELA <span>CAFFE</span></div>
+    <p id="address"></p>
+    <p id="hours"></p>
+    <a class="f-insta" href="https://www.instagram.com/Narmela_Caffe/" target="_blank" rel="noopener">@Narmela_Caffe</a>
+    <div class="footer-phones" aria-label="شماره‌های تماس کافه نارملا">
+      <a href="tel:09924040622" dir="ltr">0992 404 0622</a>
+      <span aria-hidden="true">·</span>
+      <a href="tel:09305389581" dir="ltr">0930 538 9581</a>
+    </div>
+    <p class="copy" id="copy"></p>
+  </div>
+</footer>
+</div><!-- /#siteContent -->
+
+<script>
+/* =====================================================================
+   1. CONFIG — cafe info & currency (edit freely)
+   ===================================================================== */
+const CONFIG = {
+  defaultLang: "fa",
+  priceUnit: 1000,   // PRODUCTS prices are in thousand toman (120 = 120,000 toman). Use 1 to type full prices.
+  photoDir: "",   // e.g. "images/" -> tries images/<product id>.jpg for every product, falls back to the drawing
+  currency: { fa: "تومان", en: "IRT" },
+  hours:   { fa: "ساعت کاری: هر روز ۹ صبح تا ۱۱ شب", en: "Open daily, 9 AM – 11 PM" },
+  address: { fa: "عظیمیه، نرسیده به میدان مهران، جنب بانک کشاورزی، کافه نارملا", en: "Azimieh, before Meydan Mehran, next to Bank Keshavarzi, Cafe Narmela." },
+  phones:  ["0992 404 0622", "0930 538 9581"],   // cafe phone numbers (empty list [] hides the phone box)
+  mapUrl:  "https://neshan.org/maps/places/17aad3cb0a79c582caea91ffb0f6a98a#c35.836-51.017-15z-0p"
+};
+
+/* =====================================================================
+   2. I18N — every interface string, in both languages
+   ===================================================================== */
+const I18N = {
+  fa: {
+    dir: "rtl", toggle: "EN", toggleLabel: "تغییر زبان به انگلیسی",
+    tagline: "قهوه، آرامش و طعم‌های دست‌ساز",
+    search: "جستجوی نوشیدنی یا دسر…",
+    clear: "پاک کردن جستجو",
+    all: "همه",
+    onlyAvailable: "فقط موجودها",
+    unavailable: "ناموجود",
+    items: n => `${n} مورد`,
+    emptyTitle: "چیزی پیدا نشد",
+    emptyText: "عبارت دیگری را امتحان کنید یا فیلترها را بردارید.",
+    reset: "نمایش همه منو",
+    heroTitle: "کافه نارملا، جایی که هر لیوان یه داستان برای خودش داره.", heroBtn: "مشاهده منو", heroAlt: "ورودی و تابلوی روشن کافه نارملا در شب",
+    navMenu: "منو", navVisit: "آدرس", googleMaps: "گوگل‌مپ", instaLabel: "اینستاگرام", visitTitle: "به ما سر بزنید", addressLabel: "آدرس", directions: "مسیریابی در نشان",
+    phoneLabel: "تلفن", reviewsTitle: "نظرات مردم",
+    reviewsText: "نظرات مشتریان، عکس‌ها و امتیاز کافه نارملا را در نشان ببینید.", reviewsBtn: "دیدن نظرات و عکس‌ها"
+  },
+  en: {
+    dir: "ltr", toggle: "فا", toggleLabel: "Switch language to Persian",
+    tagline: "Coffee, calm and handmade flavours",
+    search: "Search drinks or desserts…",
+    clear: "Clear search",
+    all: "All",
+    onlyAvailable: "Available only",
+    unavailable: "Unavailable",
+    items: n => `${n} ${n === 1 ? "item" : "items"}`,
+    emptyTitle: "Nothing found",
+    emptyText: "Try a different word or clear the filters.",
+    reset: "Show full menu",
+    heroTitle: "Where Every Cup Has a Story.", heroBtn: "Explore Menu", heroAlt: "Narmela Cafe storefront at night with its illuminated sign",
+    navMenu: "Menu", navVisit: "Visit", googleMaps: "Google Maps", instaLabel: "Instagram", visitTitle: "Visit us", addressLabel: "Address", directions: "Get directions on Neshan",
+    phoneLabel: "Phone", reviewsTitle: "What people say",
+    reviewsText: "See customer reviews, photos and ratings for Narmela Cafe on Neshan.", reviewsBtn: "Read reviews & photos"
+  }
+};
+
+/* =====================================================================
+   3. CATEGORIES — id is referenced by products below
+   ===================================================================== */
+const CATEGORIES = [
+  { id: "coffee",     fa: "قهوه",                    en: "Coffee" },
+  { id: "hotbar",     fa: "بار گرم",                 en: "Hot Bar" },
+  { id: "teabar",     fa: "تی بار",                  en: "Tea Bar" },
+  { id: "matchaube",  fa: "ماچا و اوبه",             en: "Matcha & Ube" },
+  { id: "icedcoffee", fa: "آیس کافی",                en: "Iced Coffee" },
+  { id: "cold",       fa: "اسموتی و نوشیدنی سرد",    en: "Smoothies & Cold Drinks" },
+  { id: "shake",      fa: "شیک",                     en: "Milkshakes" },
+  { id: "breakfast",  fa: "صبحانه",                  en: "Breakfast" },
+  { id: "dessert",    fa: "دسر",                     en: "Desserts" },
+  { id: "cookies",    fa: "کوکی",                    en: "Cookies" },
+  { id: "toppings",   fa: "تاپینگ",                  en: "Toppings" }
+];
+
+/* =====================================================================
+   4. PRODUCTS — the easy-to-edit menu data
+   Fields: id, cat, price (thousand toman; null = hidden), available (true/false),
+           name{fa,en}, desc{fa,en}, art (the drawn picture, see section 5),
+           img (OPTIONAL path to a real photo, e.g. "images/latte.jpg")
+   ===================================================================== */
+// Prices are in THOUSAND toman (120 = 120,000 toman, see CONFIG.priceUnit). price:null = no price shown yet.
+// The menu always sorts each category from lowest to highest price (unpriced items last).
+const PRODUCTS = [
+  { id:"turkish", cat:"coffee", price:120, available:true, art:["cezve"],
+    name:{fa:"قهوه ترک", en:"Turkish Coffee"},
+    desc:{fa:"قهوه ترک غلیظ با فوم", en:"Strong, traditional coffee with a thick foam"} },
+  { id:"greek", cat:"coffee", price:130, available:true, art:["demi"],
+    name:{fa:"یونانی", en:"Greek Coffee"},
+    desc:{fa:"قهوه یونانی غلیظ و معطر", en:"Rich, aromatic Greek-style coffee"} },
+  { id:"espresso", cat:"coffee", price:140, available:true, art:["cup", "#2b1608", "crema", 0.72],
+    name:{fa:"اسپرسو", en:"Espresso"},
+    desc:{fa:"شات غلیظ و معطر با کرمای طلایی", en:"A concentrated shot with golden crema"} },
+  { id:"doubleespresso", cat:"coffee", price:160, available:true, art:["cup", "#2b1608", "crema", 0.9],
+    name:{fa:"دبل اسپرسو", en:"Double Espresso"},
+    desc:{fa:"دو شات اسپرسو غلیظ و پرانرژی", en:"Two concentrated shots, bold and strong"} },
+  { id:"americano", cat:"coffee", price:185, available:true, art:["cup", "#4a2c17"],
+    name:{fa:"آمریکانو", en:"Americano"},
+    desc:{fa:"اسپرسو با آب داغ، ملایم و روان", en:"Espresso lengthened with hot water, smooth and clean"} },
+  { id:"brewed", cat:"coffee", price:195, available:true, art:["chemex"],
+    name:{fa:"قهوه دمی", en:"Brewed Coffee"},
+    desc:{fa:"قهوه دمی تازه و معطر", en:"Freshly brewed filter coffee"} },
+  { id:"cortado", cat:"coffee", price:205, available:true, art:["cup", "#6b4a30", "dot", 0.85],
+    name:{fa:"کورتادو", en:"Cortado"},
+    desc:{fa:"اسپرسو و شیر گرم به نسبت مساوی", en:"Espresso cut with an equal part of warm milk"} },
+  { id:"cappuccino", cat:"coffee", price:218, available:true, art:["cup", "#b98a5e", "foam"],
+    name:{fa:"کاپوچینو", en:"Cappuccino"},
+    desc:{fa:"سه‌لایه: اسپرسو، شیر و فوم غلیظ", en:"Equal parts espresso, milk and thick foam"} },
+  { id:"latte", cat:"coffee", price:230, available:true, art:["cup", "#c9a27a", "leaf"],
+    name:{fa:"لاته", en:"Latte"},
+    desc:{fa:"اسپرسو با شیر بخارداده و فوم نرم", en:"Espresso with steamed milk and soft foam"} },
+  { id:"affogato", cat:"coffee", price:233, available:true, art:["cup", "#3a2214", "dot", 0.6],
+    name:{fa:"افوگاتو", en:"Affogato"},
+    desc:{fa:"بستنی با یک شات اسپرسو داغ", en:"Ice cream with a hot espresso shot poured over"} },
+  { id:"mocha", cat:"coffee", price:248, available:true, art:["cup", "#6b4226", "swirl"],
+    name:{fa:"موکا", en:"Mocha"},
+    desc:{fa:"اسپرسو، شکلات و شیر بخارداده", en:"Espresso, chocolate and steamed milk"} },
+  { id:"macchiato", cat:"coffee", price:255, available:true, art:["cup", "#3a2214", "dot", 0.85],
+    name:{fa:"ماکیاتو", en:"Macchiato"},
+    desc:{fa:"اسپرسو با یک قاشق فوم شیر", en:"Espresso marked with a spoon of milk foam"} },
+  { id:"warmmilk", cat:"hotbar", price:110, available:true, art:["cup", "#fbf6ea", ""],
+    name:{fa:"شیر گرم", en:"Warm Milk"},
+    desc:{fa:"شیر گرم و ساده", en:"Simple warm milk"} },
+  { id:"chocmilk", cat:"hotbar", price:140, available:true, art:["cup", "#7a4a2b", ""],
+    name:{fa:"شیرکاکائو", en:"Chocolate Milk"},
+    desc:{fa:"شیر گرم با کاکائو", en:"Warm milk with cocoa"} },
+  { id:"masala", cat:"hotbar", price:175, available:true, art:["cup", "#c98a4b", "", 1, "stick"],
+    name:{fa:"ماسالا", en:"Masala"},
+    desc:{fa:"چای با ادویه‌های هندی", en:"Tea brewed with warm Indian spices"} },
+  { id:"hotchoc", cat:"hotbar", price:220, available:true, art:["cup", "#4a2a1b", "dots"],
+    name:{fa:"هات چاکلت", en:"Hot Chocolate"},
+    desc:{fa:"شکلات تلخ و شیر داغ", en:"Dark chocolate melted into hot milk"} },
+  { id:"whitechoc", cat:"hotbar", price:222, available:true, art:["cup", "#f1e4c8", "swirl"],
+    name:{fa:"وایت چاکلت", en:"White Chocolate"},
+    desc:{fa:"شکلات سفید و شیر گرم", en:"White chocolate with steamed milk"} },
+  { id:"hotbiscuit", cat:"hotbar", price:230, available:true, art:["cup", "#c9955a", "swirl"],
+    name:{fa:"هات بیسکوییت", en:"Hot Biscuit"},
+    desc:{fa:"نوشیدنی گرم با طعم بیسکوییت", en:"Warm drink with biscuit flavour"} },
+  { id:"hotpistachio", cat:"hotbar", price:240, available:true, art:["cup", "#c3cf9e", "swirl"],
+    name:{fa:"هات پسته", en:"Hot Pistachio"},
+    desc:{fa:"نوشیدنی گرم پسته‌ای", en:"Warm, creamy pistachio drink"} },
+  { id:"lotusblanc", cat:"hotbar", price:250, available:true, art:["cup", "#e0b98a", "heart"],
+    name:{fa:"لوتوس بلان", en:"Lotus Blanc"},
+    desc:{fa:"نوشیدنی گرم با طعم لوتوس", en:"Warm drink with Lotus biscuit flavour"} },
+  { id:"velout", cat:"hotbar", price:35, available:true, art:["cup", "#8a5a3a", "foam"],
+    name:{fa:"ولوت", en:"Velout"},
+    desc:{fa:"نوشیدنی گرم و مخملی", en:"Warm, velvety drink"} },
+  { id:"blacktea", cat:"teabar", price:100, available:true, art:["cup", "#8a3b12", "", 1, "lemon"],
+    name:{fa:"چای سیاه", en:"Black Tea"},
+    desc:{fa:"چای ایرانی تازه‌دم", en:"Freshly brewed Persian black tea"} },
+  { id:"greentea", cat:"teabar", price:105, available:true, art:["cup", "#b5c97a", "", 1, "leaf"],
+    name:{fa:"چای سبز", en:"Green Tea"},
+    desc:{fa:"سبک و گیاهی، با رایحه‌ای تازه", en:"Light, grassy and refreshing"} },
+  { id:"moroccan", cat:"teabar", price:170, available:true, art:["cup", "#b5c97a", "", 1, "mint"],
+    name:{fa:"چای مراکشی", en:"Moroccan Tea"},
+    desc:{fa:"چای سبز با نعنا به سبک مراکشی", en:"Moroccan-style mint green tea"} },
+  { id:"karak", cat:"teabar", price:190, available:true, art:["cup", "#d1a06a", "dot"],
+    name:{fa:"چای کرک", en:"Karak Tea"},
+    desc:{fa:"چای شیری غلیظ با ادویه", en:"Strong, milky, spiced tea"} },
+  { id:"borage", cat:"teabar", price:215, available:true, art:["cup", "#d9a96a", "", 1, "borage"],
+    name:{fa:"گل گاوزبان", en:"Borage"},
+    desc:{fa:"دمنوش گل‌گاوزبان، آرام‌بخش", en:"Soothing borage infusion"} },
+  { id:"rose", cat:"teabar", price:220, available:true, art:["cup", "#f0a6b4", "", 1, "blossom"],
+    name:{fa:"گل سرخ", en:"Rose"},
+    desc:{fa:"دمنوش گل سرخ معطر", en:"Fragrant rose petal infusion"} },
+  { id:"chamomile", cat:"teabar", price:235, available:true, art:["cup", "#f0d98a", "", 1, "daisy"],
+    name:{fa:"بابونه", en:"Chamomile"},
+    desc:{fa:"بابونه آرام‌بخش، بدون کافئین", en:"Calming chamomile, caffeine-free"} },
+  { id:"orangeblossom", cat:"teabar", price:240, available:true, art:["cup", "#f2b36b", "", 1, "blossom"],
+    name:{fa:"بهارنارنج", en:"Orange Blossom"},
+    desc:{fa:"بهارنارنج و گل‌های خشک، بدون کافئین", en:"Orange blossom and dried flowers, caffeine-free"} },
+  { id:"applecinnamon", cat:"teabar", price:245, available:true, art:["cup", "#d98b4e", "", 1, "stick"],
+    name:{fa:"سیب دارچین", en:"Apple Cinnamon"},
+    desc:{fa:"سیب و دارچین گرم", en:"Warm apple and cinnamon infusion"} },
+  { id:"goodsense", cat:"teabar", price:250, available:true, art:["cup", "#c9c27a", "", 1, "daisy"],
+    name:{fa:"گود سنس", en:"Good Sense"},
+    desc:{fa:"دمنوش ویژهٔ نارملا", en:"Narmela's house herbal blend"} },
+  { id:"ube", cat:"matchaube", price:240, available:true, art:["cup", "#b79ad6", "heart"],
+    name:{fa:"اوبه", en:"Ube"},
+    desc:{fa:"لاتهٔ اوبهٔ بنفش و خامه‌ای", en:"Creamy purple ube latte"} },
+  { id:"matcha", cat:"matchaube", price:294, available:true, art:["cup", "#9fbf72", "leaf"],
+    name:{fa:"ماچا", en:"Matcha"},
+    desc:{fa:"ماچای ژاپنی با شیر بخارداده", en:"Japanese matcha with steamed milk"} },
+  { id:"matchabm", cat:"matchaube", price:320, available:true, art:["glass", "#f6c84a", "#9fbf72", "ip"],
+    name:{fa:"ماچا موز انبه", en:"Matcha Banana Mango"},
+    desc:{fa:"ماچا با موز و انبه", en:"Matcha with banana and mango"} },
+  { id:"icedamericano", cat:"icedcoffee", price:210, available:true, art:["glass", "#3a2214", "#3a2214", "i"],
+    name:{fa:"آیس آمریکانو", en:"Iced Americano"},
+    desc:{fa:"اسپرسو، آب سرد و یخ", en:"Espresso over cold water and ice"} },
+  { id:"icedlatte", cat:"icedcoffee", price:220, available:true, art:["glass", "#f1e6d3", "#8f5e3b", "i"],
+    name:{fa:"آیس لاته", en:"Iced Latte"},
+    desc:{fa:"اسپرسو، شیر سرد و یخ", en:"Espresso over cold milk and ice"} },
+  { id:"icedmocha", cat:"icedcoffee", price:228, available:true, art:["glass", "#5a3420", "#8a5a38", "ich"],
+    name:{fa:"آیس موکا", en:"Iced Mocha"},
+    desc:{fa:"اسپرسو، شکلات و شیر سرد", en:"Espresso, chocolate and cold milk"} },
+  { id:"icedvanilla", cat:"icedcoffee", price:231, available:true, art:["glass", "#f6edd2", "#8f5e3b", "icp"],
+    name:{fa:"آیس لاته وانیل", en:"Iced Vanilla Latte"},
+    desc:{fa:"آیس لاته با سیروپ وانیل", en:"Iced latte with vanilla syrup"} },
+  { id:"icedhazelnut", cat:"icedcoffee", price:231, available:true, art:["glass", "#ecd9bd", "#a77a4b", "ip"],
+    name:{fa:"آیس لاته فندق", en:"Iced Hazelnut Latte"},
+    desc:{fa:"آیس لاته با سیروپ فندق", en:"Iced latte with hazelnut syrup"} },
+  { id:"icedcoconut", cat:"icedcoffee", price:235, available:true, art:["glass", "#fbf9f2", "#8f5e3b", "ic"],
+    name:{fa:"آیس لاته نارگیل", en:"Iced Coconut Latte"},
+    desc:{fa:"آیس لاته با طعم نارگیل", en:"Iced latte with coconut flavour"} },
+  { id:"icedlotus", cat:"icedcoffee", price:265, available:true, art:["glass", "#f3dcc0", "#c98a4b", "ich"],
+    name:{fa:"آیس لوتوس بلان", en:"Iced Lotus Blanc"},
+    desc:{fa:"آیس لاته با طعم لوتوس", en:"Iced latte with Lotus biscuit flavour"} },
+  { id:"icedvelout", cat:"icedcoffee", price:275, available:true, art:["glass", "#e8d6c0", "#6b4226", "icp"],
+    name:{fa:"آیس ولوت", en:"Iced Velout"},
+    desc:{fa:"نوشیدنی سرد، نرم و مخملی", en:"Cold, smooth and velvety"} },
+  { id:"icedcaramel", cat:"icedcoffee", price:283, available:true, art:["glass", "#f1e6d3", "#c98a3c", "iph"],
+    name:{fa:"آیس کارامل ماکیاتو", en:"Iced Caramel Macchiato"},
+    desc:{fa:"شیر سرد، اسپرسو و سس کارامل", en:"Cold milk, espresso and caramel sauce"} },
+  { id:"icedtea", cat:"cold", price:155, available:true, art:["glass", "#c9803a", "#e0a85e", "il"],
+    name:{fa:"آیس تی", en:"Iced Tea"},
+    desc:{fa:"چای سرد و خنک با لیمو", en:"Chilled tea with lemon"} },
+  { id:"icedchoc", cat:"cold", price:225, available:true, art:["glass", "#4a2a1b", "#6b3f2a", "ich"],
+    name:{fa:"آیس چاکلت", en:"Iced Chocolate"},
+    desc:{fa:"شکلات سرد و خامه‌ای", en:"Cold, creamy chocolate"} },
+  { id:"lemonade", cat:"cold", price:230, available:true, art:["glass", "#f6dc6a", "#fbeaa0", "ilp"],
+    name:{fa:"لیموناد", en:"Lemonade"},
+    desc:{fa:"لیمو، آب و کمی شیرینی", en:"Lemon, water and a touch of sweetness"} },
+  { id:"mojito", cat:"cold", price:245, available:true, art:["glass", "#cfe8b5", "#e8f3d6", "imnp"],
+    name:{fa:"موهیتو", en:"Mojito"},
+    desc:{fa:"نعنا، لیمو و سودا", en:"Mint, lime and soda"} },
+  { id:"pomplum", cat:"cold", price:249, available:true, art:["glass", "#a3162f", "#d4455a", "ip"],
+    name:{fa:"انار آلوچه", en:"Pomegranate Plum"},
+    desc:{fa:"نوشیدنی خنک انار و آلوچه", en:"Cold pomegranate and plum drink"} },
+  { id:"redberry", cat:"cold", price:261, available:true, art:["glass", "#b3203f", "#e0657a", "isp"],
+    name:{fa:"رد بری", en:"Red Berry"},
+    desc:{fa:"نوشیدنی خنک توت‌های قرمز", en:"Cold red berry drink"} },
+  { id:"strawrefresher", cat:"cold", price:261, available:true, art:["glass", "#f2a0aa", "#f8c3ca", "ip"],
+    name:{fa:"رفرشر توت فرنگی", en:"Strawberry Refresher"},
+    desc:{fa:"توت‌فرنگی تازه و خنک", en:"Fresh, cold strawberry"} },
+  { id:"narmela", cat:"cold", price:259, available:true, art:["glass", "#b9cba0", "#e4ecd6", "imp"],
+    name:{fa:"نارملا", en:"Narmela"},
+    desc:{fa:"نوشیدنی ویژهٔ کافه نارملا", en:"Narmela's signature cold drink"} },
+  { id:"blusky", cat:"cold", price:272, available:true, art:["glass", "#3d8fd6", "#7fc4f0", "ip"],
+    name:{fa:"بلو اسکای", en:"Blue Sky"},
+    desc:{fa:"نوشیدنی آبی و خنک", en:"Cold blue refresher"} },
+  { id:"pinacolada", cat:"cold", price:275, available:true, art:["glass", "#f6e27a", "#fbf3c8", "cp"],
+    name:{fa:"پیناکولادا", en:"Piña Colada"},
+    desc:{fa:"آناناس و نارگیل، خنک و شیرین", en:"Pineapple and coconut, cold and sweet"} },
+  { id:"mangosmoothie", cat:"cold", price:317, available:true, art:["glass", "#f5a623", "#f8c25a", "ip"],
+    name:{fa:"منگو اسموتی", en:"Mango Smoothie"},
+    desc:{fa:"اسموتی انبه", en:"Mango smoothie"} },
+  { id:"vanillashake", cat:"shake", price:331, available:true, art:["glass", "#f4e7c5", "#fbf3dc", "cr"],
+    name:{fa:"شیک وانیل", en:"Vanilla Shake"},
+    desc:{fa:"وانیل ساده و خامه‌ای", en:"Classic vanilla, smooth and creamy"} },
+  { id:"espressoshake", cat:"shake", price:364, available:true, art:["glass", "#8a5a38", "#c9a27a", "cp"],
+    name:{fa:"شیک اسپرسو", en:"Espresso Shake"},
+    desc:{fa:"شیک قهوه با شات اسپرسو", en:"Coffee shake with an espresso shot"} },
+  { id:"chocshake", cat:"shake", price:369, available:true, art:["glass", "#6b3f2a", "#8a5a38", "chr"],
+    name:{fa:"شیک شکلات", en:"Chocolate Shake"},
+    desc:{fa:"شکلات غلیظ و خامه‌ای", en:"Rich chocolate, thick and creamy"} },
+  { id:"cherryshake", cat:"shake", price:372, available:true, art:["glass", "#b3243f", "#e06a7a", "cr"],
+    name:{fa:"شیک سوییت چری", en:"Sweet Cherry Shake"},
+    desc:{fa:"شیک با طعم گیلاس شیرین", en:"Shake with sweet cherry flavour"} },
+  { id:"strawshake", cat:"shake", price:376, available:true, art:["glass", "#f2a0aa", "#f8c3ca", "csp"],
+    name:{fa:"شیک توت فرنگی", en:"Strawberry Shake"},
+    desc:{fa:"توت‌فرنگی و شیر سرد", en:"Strawberries blended with cold milk"} },
+  { id:"mangolotus", cat:"shake", price:389, available:true, art:["glass", "#f5a623", "#c98a4b", "ch"],
+    name:{fa:"شیک منگو لوتوس", en:"Mango Lotus Shake"},
+    desc:{fa:"شیک انبه با لوتوس", en:"Mango shake with Lotus biscuit"} },
+  { id:"oreoshake", cat:"shake", price:390, available:true, art:["glass", "#cfc4b8", "#e6ddd2", "co"],
+    name:{fa:"شیک اوریو", en:"Oreo Shake"},
+    desc:{fa:"شیک شکلاتی با خرده اوریو", en:"Cookies-and-cream shake with crushed Oreo"} },
+  { id:"bananachoc", cat:"shake", price:398, available:true, art:["glass", "#6b3f2a", "#f3dd8a", "cb"],
+    name:{fa:"شیک موز شکلات", en:"Banana Chocolate Shake"},
+    desc:{fa:"موز و شکلات", en:"Banana and chocolate"} },
+  { id:"pistachioshake", cat:"shake", price:412, available:true, art:["glass", "#b9cba0", "#d5e3bd", "cp"],
+    name:{fa:"شیک پیستاچو", en:"Pistachio Shake"},
+    desc:{fa:"شیک پسته، غلیظ و خامه‌ای", en:"Thick, creamy pistachio shake"} },
+  { id:"peanutshake", cat:"shake", price:417, available:true, art:["glass", "#c9955a", "#e3bd86", "ch"],
+    name:{fa:"شیک پینات", en:"Peanut Shake"},
+    desc:{fa:"شیک بادام‌زمینی", en:"Peanut shake"} },
+  { id:"lotusshake", cat:"shake", price:425, available:true, art:["glass", "#c98a4b", "#e6b98a", "co"],
+    name:{fa:"شیک لوتوس", en:"Lotus Shake"},
+    desc:{fa:"شیک بیسکوییت لوتوس", en:"Lotus biscuit shake"} },
+  { id:"nutellashake", cat:"shake", price:452, available:true, art:["glass", "#a0643a", "#c8905a", "ch"],
+    name:{fa:"شیک نوتلا", en:"Nutella Shake"},
+    desc:{fa:"فندقی و شکلاتی، غلیظ و خامه‌ای", en:"Hazelnut-chocolate, thick and creamy"} },
+  { id:"friedclassic", cat:"breakfast", price:170, available:true, art:["egg", "fried"],
+    name:{fa:"نیمرو کلاسیک", en:"Classic Fried Eggs"},
+    desc:{fa:"نیمرو • کره", en:"Sunny Side Up Eggs • Butter"} },
+  { id:"friedmushroom", cat:"breakfast", price:190, available:true, art:["egg", "friedmush"],
+    name:{fa:"نیمرو قارچ", en:"Mushroom Fried Eggs"},
+    desc:{fa:"نیمرو • قارچ", en:"Fried Eggs • Mushroom"} },
+  { id:"friedspecial", cat:"breakfast", price:205, available:true, art:["egg", "friedspecial"],
+    name:{fa:"نیمرو اسپشیال", en:"Special Fried Eggs"},
+    desc:{fa:"نیمرو با مخلفات ویژه", en:"Fried eggs with special extras"} },
+  { id:"omeletteclassic", cat:"breakfast", price:220, available:true, art:["egg", "classic"],
+    name:{fa:"املت کلاسیک", en:"Classic Omelette"},
+    desc:{fa:"تخم‌مرغ • گوجه • سبزی تازه", en:"Eggs • Tomato • Fresh Herbs"} },
+  { id:"omelettespicy", cat:"breakfast", price:235, available:true, art:["egg", "spicy"],
+    name:{fa:"املت اسپایسی", en:"Spicy Omelette"},
+    desc:{fa:"املت تند با ادویه", en:"Omelette with a spicy kick"} },
+  { id:"omelettemushroom", cat:"breakfast", price:240, available:true, art:["egg", "mushroom"],
+    name:{fa:"املت قارچ", en:"Mushroom Omelette"},
+    desc:{fa:"تخم‌مرغ • قارچ • پنیر", en:"Eggs • Mushroom • Cheese"} },
+  { id:"friedduo", cat:"breakfast", price:250, available:true, art:["egg", "friedduo"],
+    name:{fa:"نیمرو دو نفره", en:"Fried Eggs for Two"},
+    desc:{fa:"نیمرو برای دو نفر", en:"Fried eggs to share"} },
+  { id:"omelettespecial", cat:"breakfast", price:272, available:true, art:["egg", "omspecial"],
+    name:{fa:"املت اسپشیال", en:"Special Omelette"},
+    desc:{fa:"املت با مخلفات ویژه", en:"Omelette with special extras"} },
+  { id:"omeletteduo", cat:"breakfast", price:315, available:true, art:["egg", "omduo"],
+    name:{fa:"املت دو نفره", en:"Omelette for Two"},
+    desc:{fa:"املت برای دو نفر", en:"Omelette to share"} },
+  { id:"strawtart", cat:"dessert", price:null, available:true, art:["tart", "#f6ecd2", "#d94a56"],
+    name:{fa:"تارت توت فرنگی", en:"Strawberry Tart"},
+    desc:{fa:"تارت با کرم و توت‌فرنگی", en:"Tart with cream and strawberries"} },
+  { id:"tiramisu", cat:"dessert", price:null, available:false, art:["slice", "#5a3a28", "#f4ead2", "#a67c52", "#7a5238", "k"],
+    name:{fa:"تیرامیسو", en:"Tiramisu"},
+    desc:{fa:"ماسکارپونه، قهوه و کاکائو", en:"Mascarpone, coffee and cocoa"} },
+  { id:"danishbrownie", cat:"dessert", price:null, available:true, art:["danish", "#3a1f14"],
+    name:{fa:"دنیش براونی", en:"Danish Brownie"},
+    desc:{fa:"دنیش با مغز براونی شکلاتی", en:"Danish pastry with a chocolate brownie centre"} },
+  { id:"sansebastian", cat:"dessert", price:null, available:true, art:["slice", "#8a5a2b", "#f6ecd2", "#f6ecd2", "#6b4226", ""],
+    name:{fa:"چیز کیک سن سباستین", en:"San Sebastian Cheesecake"},
+    desc:{fa:"چیزکیک سوخته به سبک سن سباستین", en:"Burnt Basque-style cheesecake"} },
+  { id:"trelechepistachio", cat:"dessert", price:null, available:true, art:["slice", "#b9cba0", "#f4ead2", "#f4ead2", "#d5e3bd", "g"],
+    name:{fa:"سه شیر پسته", en:"Pistachio Tres Leches"},
+    desc:{fa:"کیک سه‌شیر با پستهٔ خرد شده", en:"Tres leches cake with crushed pistachio"} },
+  { id:"brownie", cat:"dessert", price:null, available:true, art:["slice", "#4a2a1b", "#3d2316", "#4a2a1b", "#5a3522", "nw"],
+    name:{fa:"براونی", en:"Brownie"},
+    desc:{fa:"براونی نرم شکلاتی با گردو", en:"Fudgy chocolate brownie with walnuts"} },
+  { id:"croissant", cat:"dessert", price:null, available:true, art:["croissant"],
+    name:{fa:"کراسان ساده", en:"Plain Croissant"},
+    desc:{fa:"ترد و لایه‌لایه، هر روز تازه", en:"Flaky and layered, baked fresh daily"} },
+  { id:"pistachiotart", cat:"dessert", price:null, available:true, art:["tart", "#b9cba0", "#7fa05a"],
+    name:{fa:"تارت پسته", en:"Pistachio Tart"},
+    desc:{fa:"تارت با کرم پسته", en:"Tart with pistachio cream"} },
+  { id:"carrotcake", cat:"dessert", price:null, available:true, art:["slice", "#f6ecd2", "#d98a3c", "#f6ecd2", "#f6ecd2", "n"],
+    name:{fa:"کیک هویج", en:"Carrot Cake"},
+    desc:{fa:"کیک هویج با کرم پنیر", en:"Carrot cake with cream cheese frosting"} },
+  { id:"nycookie", cat:"cookies", price:null, available:true, art:["cookies", "#e8c18a", "#e0b073", "#4a2a1b"],
+    name:{fa:"کوکی نیویورکی", en:"New York Cookie"},
+    desc:{fa:"کوکی بزرگ و نرم به سبک نیویورکی", en:"Large, soft New York–style cookie"} },
+  { id:"chocookie", cat:"cookies", price:null, available:true, art:["cookies", "#7a4a2b", "#6b3f2a", "#f6ecd2"],
+    name:{fa:"کوکی چاکلت", en:"Chocolate Cookie"},
+    desc:{fa:"کوکی شکلاتی", en:"Rich chocolate cookie"} },
+  { id:"walnutcookie", cat:"cookies", price:null, available:true, art:["cookies", "#d9a566", "#cf9a5c", "#a8691f"],
+    name:{fa:"کوکی گردویی", en:"Walnut Cookie"},
+    desc:{fa:"کوکی با گردوی خرد شده", en:"Cookie with crushed walnuts"} },
+  { id:"honey", cat:"toppings", price:30, available:true, art:["jar", "#e0a030"],
+    name:{fa:"عسل", en:"Honey"},
+    desc:{fa:"یک قاشق عسل", en:"A spoon of honey"} },
+  { id:"syrup", cat:"toppings", price:50, available:true, art:["bottle", "#c8283c"],
+    name:{fa:"سیروپ", en:"Syrup"},
+    desc:{fa:"سیروپ اضافه", en:"Extra flavour syrup"} },
+  { id:"extrascoop", cat:"toppings", price:50, available:true, art:["scoop", "#f6ecd2"],
+    name:{fa:"اسکوپ بستنی اضافه", en:"Extra Ice Cream Scoop"},
+    desc:{fa:"یک اسکوپ بستنی اضافه", en:"An extra scoop of ice cream"} },
+  { id:"cream", cat:"toppings", price:60, available:true, art:["dollop"],
+    name:{fa:"خامه", en:"Cream"},
+    desc:{fa:"خامهٔ اضافه", en:"Extra whipped cream"} },
+  { id:"ubefoam", cat:"toppings", price:60, available:true, art:["cup", "#d9c8ec", "foam", 0.8],
+    name:{fa:"کلدفوم اوبه", en:"Ube Cold Foam"},
+    desc:{fa:"کلدفوم اوبه", en:"Ube cold foam"} },
+  { id:"banana", cat:"toppings", price:80, available:true, art:["banana"],
+    name:{fa:"موز", en:"Banana"},
+    desc:{fa:"موز اضافه", en:"Extra banana"} },
+  { id:"extraespresso", cat:"toppings", price:null, available:true, art:["cup", "#2b1608", "crema", 0.6],
+    name:{fa:"شات اضافه اسپرسو", en:"Extra Espresso Shot"},
+    desc:{fa:"یک شات اسپرسو اضافه", en:"One extra espresso shot"} },
+  { id:"extraalmond", cat:"toppings", price:null, available:true, art:["cup", "#f3e9d8", "dot", 0.72],
+    name:{fa:"شات اضافه شیر بادام", en:"Extra Almond Milk Shot"},
+    desc:{fa:"یک شات شیر بادام اضافه", en:"One extra almond milk shot"} }
+];
+
+/* =====================================================================
+   5. PRODUCT PICTURES — drawn as SVG when a product has no real photo.
+   Replace by adding `img: "images/your-photo.jpg"` to the product.
+   ===================================================================== */
+const ART = {
+  cup:   '<ellipse cx="60" cy="92" rx="38" ry="6" fill="#161616" opacity=".08"/><path d="M30 48h52v16a26 26 0 0 1-26 26h0a26 26 0 0 1-26-26z" fill="#fff" stroke="#161616" stroke-width="3"/><path d="M82 54h6a9 9 0 0 1 0 18h-8" fill="none" stroke="#161616" stroke-width="3"/><path d="M30 54h52" stroke="#8FA776" stroke-width="6"/><path d="M48 38c-4-6 4-8 0-14M64 38c-4-6 4-8 0-14" fill="none" stroke="#8FA776" stroke-width="3" stroke-linecap="round"/>',
+  glass: '<ellipse cx="60" cy="96" rx="30" ry="5" fill="#161616" opacity=".08"/><path d="M38 28h44l-5 62a6 6 0 0 1-6 5H49a6 6 0 0 1-6-5z" fill="#fff" stroke="#161616" stroke-width="3"/><path d="M41 52h38l-3 38H44z" fill="#B9CBA0" opacity=".75"/><rect x="50" y="60" width="12" height="12" rx="3" fill="#fff" opacity=".8"/><path d="M68 10 62 40" stroke="#161616" stroke-width="3" stroke-linecap="round"/>',
+  pot:   '<ellipse cx="60" cy="96" rx="36" ry="5" fill="#161616" opacity=".08"/><path d="M32 54h56a2 2 0 0 1 2 2v14a22 22 0 0 1-22 22H52a22 22 0 0 1-22-22V56a2 2 0 0 1 2-2z" fill="#fff" stroke="#161616" stroke-width="3"/><path d="M90 60h6a8 8 0 0 1 0 16h-8M30 62l-10-6" fill="none" stroke="#161616" stroke-width="3" stroke-linecap="round"/><path d="M44 54a16 12 0 0 1 32 0" fill="#B9CBA0" stroke="#161616" stroke-width="3"/><circle cx="60" cy="36" r="4" fill="#161616"/>',
+  cake:  '<ellipse cx="60" cy="96" rx="40" ry="5" fill="#161616" opacity=".08"/><path d="M22 90 98 90 98 62 22 62z" fill="#fff" stroke="#161616" stroke-width="3" stroke-linejoin="round"/><path d="M22 62 98 62 98 52a38 14 0 0 0-76 0z" fill="#B9CBA0" stroke="#161616" stroke-width="3" stroke-linejoin="round"/><path d="M22 76h76" stroke="#8FA776" stroke-width="3"/><circle cx="60" cy="40" r="6" fill="#161616"/><path d="M60 34c0-6 6-8 8-10" fill="none" stroke="#161616" stroke-width="2.5" stroke-linecap="round"/>'
+};
+/* Product pictures — each product gets its own drawing built from small parts.
+   art formats: ["cup", liquid, foam, size, extra] | ["glass", bottom, top, flags]
+                ["slice", c1, c2, c3, topFace, flags] | ["croissant"] | ["cookies"]
+   A real photo always wins: set `img` on a product, or use CONFIG.photoDir (see top). */
+const K = 'stroke="#161616" stroke-width="3"';
+const shadow = (rx, y = 98) => `<ellipse cx="60" cy="${y}" rx="${rx}" ry="5" fill="#161616" opacity=".08"/>`;
+const flower = (x, y, c, r = 5, pc = "#fff") => [0,72,144,216,288].map(a => `<ellipse cx="${x}" cy="${y - r}" rx="${r * .6}" ry="${r}" fill="${pc}" stroke="#161616" stroke-width="1.5" transform="rotate(${a} ${x} ${y})"/>`).join("") + `<circle cx="${x}" cy="${y}" r="${r * .55}" fill="${c}"/>`;
+const DRAW = {
+  cup(liq, foam = "", s = 1, extra = ""){
+    const cy = 58, r = 30 * s, lr = r * .86, cream = "#f6ead7";
+    const F = {
+      heart: `<path d="M60 ${cy+13}C44 ${cy+2} 50 ${cy-12} 60 ${cy-3}C70 ${cy-12} 76 ${cy+2} 60 ${cy+13}z" fill="${cream}"/>`,
+      leaf: `<ellipse cx="60" cy="${cy+7}" rx="12" ry="6" fill="${cream}"/><ellipse cx="60" cy="${cy}" rx="9" ry="5" fill="${cream}"/><ellipse cx="60" cy="${cy-6}" rx="6" ry="4" fill="${cream}"/>`,
+      crema: `<circle cx="60" cy="${cy}" r="${lr*.8}" fill="#b9773d"/><circle cx="60" cy="${cy}" r="${lr*.45}" fill="#8a4f22"/>`,
+      foam: `<circle cx="60" cy="${cy}" r="${lr*.8}" fill="#f1e2cb"/><path d="M48 ${cy+2}q6-8 12 0t12 0" fill="none" stroke="#b98a5e" stroke-width="2"/>`,
+      dot: `<circle cx="60" cy="${cy}" r="${lr*.28}" fill="${cream}"/>`,
+      dots: [[50,50],[68,52],[58,66],[72,66],[46,64]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="5" fill="#fff"/>`).join(""),
+      swirl: `<path d="M60 ${cy-14}a14 14 0 1 1-14 14" fill="none" stroke="${cream}" stroke-width="3" stroke-linecap="round"/><path d="M60 ${cy-6}a6 6 0 1 1-6 6" fill="none" stroke="${cream}" stroke-width="3" stroke-linecap="round"/>`
+    }[foam] || "";
+    const X = {
+      stick: `<path d="M22 78 44 95" stroke="#8a5a2b" stroke-width="6" stroke-linecap="round"/>`,
+      leaf: `<ellipse cx="30" cy="85" rx="9" ry="5" transform="rotate(-30 30 85)" fill="#7fa05a" ${K}/>`,
+      mint: `<ellipse cx="26" cy="82" rx="8" ry="4" transform="rotate(-40 26 82)" fill="#5f9e4a"/><ellipse cx="34" cy="89" rx="8" ry="4" transform="rotate(10 34 89)" fill="#6fae5a"/>`,
+      daisy: flower(30, 85, "#f2c94c"),
+      blossom: flower(30, 85, "#f7d27a", 4),
+      lemon: `<circle cx="30" cy="85" r="10" fill="#f6dc6a" ${K}/><path d="M30 76v18M21 85h18" stroke="#fff" stroke-width="1.5"/>`
+      ,bergamot: `<circle cx="30" cy="85" r="10" fill="#b8cf4a" ${K}/><path d="M30 76v18M21 85h18" stroke="#fff" stroke-width="1.5"/>`,
+      borage: flower(30, 85, "#161616", 5, "#7aa5e0"),
+      lavender: `<path d="M24 94 38 74" stroke="#7fa05a" stroke-width="2.5"/>` + [0,1,2,3,4].map(i => `<ellipse cx="${27 + i * 3}" cy="${90 - i * 4}" rx="3" ry="2" fill="#8a63c9"/>`).join("")
+    }[extra] || "";
+    return shadow(40) + `<circle cx="60" cy="${cy}" r="42" fill="#fff" ${K}/><path d="M${60+r-2} ${cy-8}h10a8 8 0 0 1 0 16h-10" fill="none" ${K}/><circle cx="60" cy="${cy}" r="${r}" fill="#fff" ${K}/><circle cx="60" cy="${cy}" r="${lr}" fill="${liq}" stroke="#161616" stroke-width="1.5"/>` + F + X;
+  },
+  glass(bot, top, g = ""){
+    const p = "M36 22h48l-5 70a6 6 0 0 1-6 5H47a6 6 0 0 1-6-5z", has = c => g.includes(c);
+    const ice = has("i") ? `<g fill="#fff" opacity=".65"><rect x="44" y="42" width="14" height="14" rx="3" transform="rotate(12 51 49)"/><rect x="62" y="50" width="14" height="14" rx="3" transform="rotate(-10 69 57)"/><rect x="48" y="66" width="14" height="14" rx="3" transform="rotate(8 55 73)"/></g>` : "";
+    const cream = has("c") ? `<path d="M35 26c0-16 50-16 50 0z" fill="#fff" ${K} stroke-linejoin="round"/>` : "";
+    const top2 = (has("h") ? `<path d="M42 20l8 6 8-6 8 6 8-6" fill="none" stroke="#3a1f14" stroke-width="3"/>` : "")
+      + (has("r") ? `<circle cx="60" cy="8" r="6" fill="#c8283c" ${K}/>` : "")
+      + (has("o") ? `<circle cx="50" cy="10" r="6" fill="#2a2a2a"/><circle cx="68" cy="9" r="6" fill="#2a2a2a"/><path d="M45 10h10M63 9h10" stroke="#fff" stroke-width="1.5"/>` : "")
+      + (has("b") ? `<path d="M64 20c10-16 24-8 22 8-6-6-14-8-22-8z" fill="#f3dd8a" ${K} stroke-linejoin="round"/>` : "")
+      + (has("s") ? `<circle cx="88" cy="26" r="8" fill="#d94a56" ${K}/><path d="M84 18l4 3 4-3" fill="none" stroke="#5f9e4a" stroke-width="2.5"/>` : "")
+      + (has("l") ? `<circle cx="88" cy="26" r="10" fill="#f6dc6a" ${K}/><path d="M88 16v20M78 26h20" stroke="#fff" stroke-width="1.5"/>` : "")
+      + (has("n") ? `<circle cx="32" cy="26" r="9" fill="#8fbf4c" ${K}/><path d="M32 17v18M23 26h18" stroke="#fff" stroke-width="1.5"/>` : "")
+      + (has("e") ? `<circle cx="88" cy="26" r="10" fill="#f0953a" ${K}/><path d="M88 16v20M78 26h20" stroke="#fff" stroke-width="1.5"/>` : "")
+      + (has("m") ? `<ellipse cx="50" cy="20" rx="9" ry="5" transform="rotate(-30 50 20)" fill="#5f9e4a"/><ellipse cx="62" cy="17" rx="9" ry="5" transform="rotate(20 62 17)" fill="#6fae5a"/>` : "");
+    const straw = has("p") ? `<path d="M74 4 62 76" stroke="#8FA776" stroke-width="5" stroke-linecap="round"/>` : "";
+    return shadow(30) + `<defs><clipPath id="k"><path d="${p}"/></clipPath></defs><path d="${p}" fill="#fff"/><g clip-path="url(#k)"><rect x="30" y="34" width="60" height="32" fill="${top}"/><rect x="30" y="64" width="60" height="40" fill="${bot}"/>${ice}</g>${straw}<path d="${p}" fill="none" ${K} stroke-linejoin="round"/>` + cream + top2;
+  },
+  slice(a, b, c, tf, f = ""){
+    const has = x => f.includes(x), R = (y, h, fill) => `<rect x="18" y="${y}" width="66" height="${h}" fill="${fill}"/>`;
+    const dots = (pts, col, r = 2.5) => pts.map(([x,y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/>`).join("");
+    const topP = [[44,52],[58,49],[72,52],[84,49],[50,56],[66,55]];
+    return shadow(48) + `<ellipse cx="60" cy="94" rx="52" ry="9" fill="#fff" ${K}/>`
+      + R(60, 11, a) + R(71, 11, b) + R(82, 10, c)
+      + `<path d="M84 60L102 46V78L84 92z" fill="${b}" ${K} stroke-linejoin="round"/><path d="M84 60L102 46V78L84 92z" fill="#161616" opacity=".16"/>`
+      + `<path d="M18 60L36 46H102L84 60z" fill="${tf}" ${K} stroke-linejoin="round"/><rect x="18" y="60" width="66" height="32" fill="none" ${K}/>`
+      + (has("c") ? `<circle cx="62" cy="40" r="7" fill="#c8283c" ${K}/>` : "") + (has("k") ? dots(topP, "#2b1608") : "")
+      + (has("g") ? dots(topP, "#7fa05a") : "") + (has("w") ? dots(topP.slice(0, 4), "#fff", 2) : "")
+      + (has("n") ? dots(topP.slice(3), "#c9955a", 3.5) : "");
+  },
+  press(){
+    return shadow(36) + `<path d="M80 46h10a8 11 0 0 1 0 22h-10" fill="none" ${K}/><rect x="38" y="34" width="42" height="58" fill="#fff"/><rect x="38" y="52" width="42" height="40" fill="#3a2214"/><rect x="38" y="34" width="42" height="58" fill="none" ${K}/><rect x="34" y="28" width="50" height="8" rx="3" fill="#161616"/><path d="M59 28V14" stroke="#161616" stroke-width="3"/><circle cx="59" cy="11" r="5" fill="#161616"/><rect x="34" y="90" width="50" height="8" rx="3" fill="#161616"/>`;
+  },
+  chemex(){
+    return shadow(34) + `<path d="M54 52h12l20 42H34z" fill="#fff"/><path d="M42 76h36l8 18H34z" fill="#5a3420"/><path d="M54 52h12l20 42H34z" fill="none" ${K} stroke-linejoin="round"/><path d="M36 18h48L66 52H54z" fill="#fff" ${K} stroke-linejoin="round"/><rect x="50" y="46" width="20" height="12" rx="2" fill="#a8691f" ${K}/>`;
+  },
+  cezve(){
+    return shadow(38) + `<path d="M80 62 108 46" stroke="#4a2a1b" stroke-width="6" stroke-linecap="round"/><path d="M36 40h36l8 6H28z" fill="#c9783c" ${K} stroke-linejoin="round"/><path d="M34 46h40l8 42a7 7 0 0 1-7 8H33a7 7 0 0 1-7-8z" fill="#d98a4c" ${K} stroke-linejoin="round"/><ellipse cx="54" cy="40" rx="17" ry="4" fill="#4a2a1b"/><path d="M33 64h42" stroke="#a8591f" stroke-width="2.5"/>`;
+  },
+  demi(){
+    return shadow(38) + `<ellipse cx="60" cy="92" rx="38" ry="7" fill="#fff" ${K}/><path d="M82 64h6a7 7 0 0 1 0 14h-8" fill="none" ${K}/><path d="M38 56h44v14a22 22 0 0 1-44 0z" fill="#fff" ${K} stroke-linejoin="round"/><ellipse cx="60" cy="56" rx="22" ry="5" fill="#4a2a1b" ${K}/><ellipse cx="60" cy="56" rx="14" ry="2.5" fill="#d9b98c"/><path d="M52 44c-4-6 4-8 0-14M66 44c-4-6 4-8 0-14" fill="none" stroke="#8FA776" stroke-width="3" stroke-linecap="round"/>`;
+  },
+  egg(kind){
+    const d = (pts, col, r) => pts.map(([x,y]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/>`).join("");
+    const om = `<ellipse cx="60" cy="58" rx="36" ry="22" fill="#f5cf55" ${K}/><path d="M60 37q-9 21 0 42" fill="none" stroke="#c99a1c" stroke-width="2.5"/>`;
+    const cap = (x, y) => `<path d="M${x-7} ${y}a7 6 0 0 1 14 0z" fill="#e8d8c0" stroke="#161616" stroke-width="1.5"/><rect x="${x-2}" y="${y}" width="4" height="6" fill="#e8d8c0" stroke="#161616" stroke-width="1.5"/>`;
+    const egg = (x, y, rx, ry, r) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff" ${K}/><circle cx="${x}" cy="${y}" r="${r}" fill="#f2b722"/>`;
+    const sausage = (y, rot) => `<rect x="56" y="${y}" width="44" height="13" rx="6.5" fill="#b4533a" ${K} transform="rotate(${rot} 78 ${y + 6})"/>`;
+    const body = {
+      classic: om + d([[44,52],[74,48],[80,64],[50,68]], "#5f9e4a", 2.5) + d([[56,60],[70,70]], "#d94a56", 3),
+      mushroom: om + cap(46, 54) + cap(70, 50) + cap(62, 70) + d([[52,64],[78,62]], "#fbe9a0", 2.5),
+      persian: om + d([[46,52],[70,50],[78,66],[54,68]], "#d94a56", 5) + d([[60,56],[66,64],[50,60]], "#7a3a1a", 1.8),
+      fried: egg(46, 52, 20, 16, 7) + egg(76, 70, 18, 14, 6) + `<rect x="64" y="30" width="12" height="9" rx="2" fill="#f6e08a" stroke="#161616" stroke-width="1.5"/>`,
+      sausage: egg(44, 58, 20, 16, 7) + sausage(36, 18) + sausage(72, -12),
+      friedmush: egg(46, 52, 20, 16, 7) + egg(76, 70, 18, 14, 6) + cap(90, 40) + cap(32, 80),
+      friedspecial: egg(46, 52, 20, 16, 7) + egg(76, 70, 18, 14, 6) + d([[90,40],[32,80],[58,88]], "#5f9e4a", 3) + d([[28,44],[96,56]], "#d94a56", 4),
+      friedduo: egg(40, 46, 18, 14, 6) + egg(76, 44, 18, 14, 6) + egg(58, 76, 20, 14, 6),
+      spicy: om + d([[44,52],[74,48],[80,64],[50,68],[60,56]], "#c8283c", 2.5) + d([[66,62],[52,58]], "#3a1f14", 1.8),
+      omduo: `<ellipse cx="46" cy="50" rx="26" ry="17" fill="#f5cf55" ${K}/><ellipse cx="74" cy="68" rx="26" ry="17" fill="#f5cf55" ${K}/>` + d([[40,46],[54,54],[70,64],[82,72]], "#5f9e4a", 2.5),
+      omspecial: om + cap(46, 54) + cap(70, 50) + d([[56,68],[78,66]], "#d94a56", 4) + d([[40,64],[84,58]], "#5f9e4a", 2.5)
+    }[kind] || "";
+    return shadow(44) + `<circle cx="60" cy="58" r="44" fill="#fff" ${K}/><circle cx="60" cy="58" r="34" fill="none" stroke="#E8DDC9" stroke-width="2"/>` + body;
+  },
+  tart(f, t){
+    const ring = [0,1,2,3,4,5,6,7].map(i => { const a = i * Math.PI / 4; return `<circle cx="${(60 + 24 * Math.cos(a)).toFixed(1)}" cy="${(58 + 24 * Math.sin(a)).toFixed(1)}" r="6" fill="${t}" stroke="#161616" stroke-width="1.5"/>`; }).join("");
+    return shadow(44) + `<circle cx="60" cy="58" r="44" fill="#d9a566" ${K}/><circle cx="60" cy="58" r="35" fill="${f}" stroke="#a8691f" stroke-width="2"/>` + ring + `<circle cx="60" cy="58" r="8" fill="${t}" stroke="#161616" stroke-width="1.5"/>`;
+  },
+  danish(c){
+    return shadow(42) + `<path d="M60 18 102 60 60 102 18 60z" fill="#e3a553" ${K} stroke-linejoin="round"/><path d="M60 34 86 60 60 86 34 60z" fill="none" stroke="#a8691f" stroke-width="2.5"/><circle cx="60" cy="60" r="11" fill="${c}" stroke="#161616" stroke-width="2"/>`;
+  },
+  jar(c){
+    return shadow(32) + `<rect x="32" y="40" width="56" height="54" rx="12" fill="${c}" ${K}/><rect x="36" y="26" width="48" height="14" rx="4" fill="#161616"/><rect x="44" y="60" width="32" height="20" rx="3" fill="#fff" stroke="#161616" stroke-width="1.5"/>`;
+  },
+  bottle(c){
+    return shadow(24) + `<path d="M46 60h28v32a4 4 0 0 1-4 4H50a4 4 0 0 1-4-4z" fill="${c}"/><path d="M52 18h16v14l8 10v50a6 6 0 0 1-6 6H50a6 6 0 0 1-6-6V42l8-10z" fill="none" ${K} stroke-linejoin="round"/><rect x="50" y="10" width="20" height="10" rx="3" fill="#161616"/>`;
+  },
+  scoop(c){
+    return shadow(34) + `<circle cx="60" cy="50" r="22" fill="${c}" ${K}/><path d="M42 62c0 8 6 8 6 0M70 62c0 10 7 8 7 0" fill="none" stroke="#161616" stroke-width="2"/><path d="M30 64h60a30 28 0 0 1-60 0z" fill="#fff" ${K} stroke-linejoin="round"/><ellipse cx="60" cy="96" rx="16" ry="4" fill="#fff" ${K}/>`;
+  },
+  dollop(){
+    return shadow(32) + `<ellipse cx="60" cy="82" rx="30" ry="12" fill="#fff" ${K}/><ellipse cx="60" cy="64" rx="23" ry="10" fill="#fff" ${K}/><ellipse cx="60" cy="48" rx="15" ry="8" fill="#fff" ${K}/><path d="M60 30c-3 5 3 6 0 10" fill="none" stroke="#161616" stroke-width="3" stroke-linecap="round"/>`;
+  },
+  banana(){
+    return shadow(40) + `<path d="M20 42C26 80 60 94 102 68L98 54C66 76 40 66 32 40z" fill="#f3dd8a" ${K} stroke-linejoin="round"/><path d="M20 42l12-2" stroke="#8a5a2b" stroke-width="5" stroke-linecap="round"/>`;
+  },
+  croissant(){
+    return shadow(44) + `<path d="M14 80C12 52 42 32 60 32C78 32 108 52 106 80C102 92 92 90 88 80C84 64 72 54 60 54C48 54 36 64 32 80C28 90 18 92 14 80z" fill="#e3a553" ${K} stroke-linejoin="round"/><path d="M34 72L22 56M45 60L38 44M60 54V37M75 60L82 44M86 72L98 56" fill="none" stroke="#a8691f" stroke-width="2.5" stroke-linecap="round"/>`;
+  },
+  cookies(b1 = "#e0b073", b2 = "#d9a566", ch = "#4a2a1b"){
+    const chips = (x, y, pts) => pts.map(([dx,dy]) => `<ellipse cx="${x+dx}" cy="${y+dy}" rx="4" ry="3" fill="${ch}"/>`).join("");
+    return shadow(44) + `<circle cx="76" cy="50" r="22" fill="${b2}" ${K}/>` + chips(76, 50, [[-8,-8],[8,-4],[-2,8],[10,10],[-12,4]])
+      + `<circle cx="48" cy="68" r="26" fill="${b1}" ${K}/>` + chips(48, 68, [[-10,-10],[8,-12],[-14,6],[2,2],[12,10],[-4,16]]);
+  }
+};
+function placeholderSrc(a){
+  const body = Array.isArray(a) ? DRAW[a[0]](...a.slice(1)) : (ART[a] || ART.cup);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#F1E9DC"/>${body}</svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+/* =====================================================================
+   6. STATE & HELPERS
+   ===================================================================== */
+const state = { lang: CONFIG.defaultLang, query: "", cat: "all", onlyAvail: false };
+const $ = id => document.getElementById(id);
+const els = {
+  menu: $("menu"), chips: $("chips"), search: $("search"), clear: $("clear"),
+  count: $("count"), langBtn: $("langBtn"), avail: $("availSwitch"), controls: $("controls")
+};
+
+// Restore saved language (safe if storage is blocked)
+try { const s = localStorage.getItem("narmela-lang"); if (s === "fa" || s === "en") state.lang = s; } catch (e) {}
+
+const t = key => I18N[state.lang][key];
+
+// Escape text before inserting into HTML
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+// Normalise text so Persian/Arabic letter variants and case don't break search
+const norm = s => String(s).toLowerCase()
+  .replace(/ي/g, "ی").replace(/ك/g, "ک")
+  .replace(/[\u064B-\u065F\u0670\u200c]/g, "")   // diacritics + ZWNJ
+  .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+  .trim();
+
+const formatPrice = n => new Intl.NumberFormat(state.lang === "fa" ? "fa-IR" : "en-US").format(n);
+const formatCount = n => state.lang === "fa" ? I18N.fa.items(new Intl.NumberFormat("fa-IR").format(n)) : I18N.en.items(n);
+
+/* =====================================================================
+   7. FILTERING — search in both languages + category + availability
+   ===================================================================== */
+function getFiltered(){
+  const q = norm(state.query);
+  return PRODUCTS.filter(p => {
+    if (state.cat !== "all" && p.cat !== state.cat) return false;
+    if (state.onlyAvail && !p.available) return false;
+    if (!q) return true;
+    const hay = norm([p.name.fa, p.name.en, p.desc.fa, p.desc.en].join(" "));
+    return hay.includes(q);
+  });
+}
+
+/* =====================================================================
+   8. RENDERING
+   ===================================================================== */
+const ICONS = {
+  all: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+  coffee: '<path d="M5 10h11v3a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H15"/><path d="M8 3.5v3M12 3.5v3"/><path d="M4 21h13"/>',
+  hotbar: '<path d="M4 9h12v7a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M16 11h2a2 2 0 0 1 0 4h-2"/><path d="M8 3c-1 1.5 1 2.5 0 4M12 3c-1 1.5 1 2.5 0 4"/>',
+  teabar: '<path d="M6 10h9a2 2 0 0 1 2 2v1a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M17 12l3-3"/><path d="M6 12H4a2 2 0 0 0 0 4h2.5"/><path d="M9 7h4M11 5v2"/>',
+  matchaube: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14z"/><path d="M5 19c3-4 6-6 9-8"/>',
+  icedcoffee: '<path d="M7 7h10l-1.2 12a2 2 0 0 1-2 1.8h-3.6a2 2 0 0 1-2-1.8z"/><path d="M13 7l1.5-4H17"/><path d="M8 11h8"/>',
+  cold: '<path d="M6 6h12l-1.5 13a2 2 0 0 1-2 1.8h-5a2 2 0 0 1-2-1.8z"/><path d="M6.6 11h10.8"/><circle cx="17.5" cy="5" r="2.5"/>',
+  shake: '<path d="M7 11h10l-1.2 8.5a2 2 0 0 1-2 1.5h-3.6a2 2 0 0 1-2-1.5z"/><path d="M6 11a6 4 0 0 1 12 0"/><path d="M12 7V3h3"/>',
+  breakfast: '<path d="M12 4c4 0 8 2 8 7s-3 9-8 9-9-3-9-8 5-8 9-8z"/><circle cx="12" cy="12" r="3"/>',
+  dessert: '<path d="M5 20h14v-7H5z"/><path d="M5 16.5c2 1.5 3 1.5 5 0s3-1.5 5 0 3 1.5 4 0"/><path d="M8.5 13V9.5M12 13V9.5M15.5 13V9.5"/><path d="M8.5 7.5v-1M12 7.5v-1M15.5 7.5v-1"/>',
+  cookies: '<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r=".9" fill="currentColor"/><circle cx="14.5" cy="9" r=".9" fill="currentColor"/><circle cx="12" cy="14" r=".9" fill="currentColor"/><circle cx="15.5" cy="14.5" r=".9" fill="currentColor"/>',
+  toppings: '<path d="M8 9h8v9a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/><path d="M7 5.5h10V9H7z"/><path d="M12 12v3"/>'
+};
+// Show each category from lowest to highest price (items without a price go last)
+const priceOf = p => p.price == null ? Infinity : p.price;
+const sortByPrice = list => list.slice().sort((a, b) => priceOf(a) === priceOf(b) ? 0 : priceOf(a) < priceOf(b) ? -1 : 1);
+
+function renderChips(){
+  const list = [{ id: "all", label: t("all") }, ...CATEGORIES.map(c => ({ id: c.id, label: c[state.lang] }))];
+  els.chips.innerHTML = list.map(c =>
+    `<button class="chip" type="button" data-cat="${c.id}" aria-pressed="${state.cat === c.id}"><i><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[c.id]}</svg></i><span>${esc(c.label)}</span></button>`
+  ).join("");
+  markChips(false);
+}
+// Highlight the selected card without rebuilding the row (keeps the scroll position) and centre it
+function markChips(smooth = true){
+  let on = null;
+  els.chips.querySelectorAll(".chip").forEach(b => { const is = b.dataset.cat === state.cat; b.setAttribute("aria-pressed", String(is)); if (is) on = b; });
+  if (!on) return;
+  const a = on.getBoundingClientRect(), c = els.chips.getBoundingClientRect();
+  els.chips.scrollBy({ left: (a.left + a.width / 2) - (c.left + c.width / 2), behavior: smooth ? "smooth" : "auto" });
+}
+
+function itemHTML(p, i){
+  const lang = state.lang;
+  const src = p.img ? esc(p.img) : CONFIG.photoDir ? esc(CONFIG.photoDir + p.id + ".jpg") : placeholderSrc(p.art);
+  const fallback = placeholderSrc(p.art);
+  const price = p.price == null ? "" : `<div class="price">${formatPrice(p.price * CONFIG.priceUnit)}<small>${esc(CONFIG.currency[lang])}</small></div>`;
+  return `
+  <article class="item ${p.available ? "" : "off"}" style="--i:${i}">
+    <div class="thumb"><img src="${src}" alt="${esc(p.name[lang])}" loading="lazy" width="400" height="400" onload="this.parentNode.classList.add('ld')" onerror="this.onerror=null;this.src='${fallback}'">${p.available ? "" : `<span class="badge">${esc(t("unavailable"))}</span>`}</div>
+    <div class="info">
+      <h3 class="name">${esc(p.name[lang])}</h3>
+      <p class="subname" lang="${lang === "fa" ? "en" : "fa"}" dir="${lang === "fa" ? "ltr" : "rtl"}">${esc(p.name[lang === "fa" ? "en" : "fa"])}</p>
+      <p class="desc">${esc(p.desc[lang])}</p>
+      ${price}
+    </div>
+  </article>`;
+}
+
+function renderMenu(){
+  const results = getFiltered();
+  els.count.textContent = formatCount(results.length);
+
+  // Elegant empty state
+  if (!results.length){
+    els.menu.innerHTML = `
+      <div class="empty">
+        <svg class="cup" viewBox="0 0 120 120" aria-hidden="true">
+          <rect width="120" height="120" rx="60" fill="#E4ECD6"/>${ART.cup}
+        </svg>
+        <h3>${esc(t("emptyTitle"))}</h3>
+        <p>${esc(t("emptyText"))}</p>
+        <button type="button" id="resetBtn">${esc(t("reset"))}</button>
+      </div>`;
+    $("resetBtn").addEventListener("click", resetFilters);
+    return;
+  }
+
+  // Group by category (keeps CATEGORIES order)
+  let counter = 0;
+  els.menu.innerHTML = CATEGORIES.map(cat => {
+    const items = sortByPrice(results.filter(p => p.cat === cat.id));
+    if (!items.length) return "";
+    return `
+    <section class="category" aria-labelledby="h-${cat.id}">
+      <div class="cat-head"><h2 id="h-${cat.id}">${esc(cat[state.lang])}</h2><span>${esc(formatCount(items.length))}</span></div>
+      <div class="grid">${items.map(p => itemHTML(p, counter++)).join("")}</div>
+    </section>`;
+  }).join("");
+}
+
+// Apply language to all static texts + direction
+function applyLanguage(){
+  const L = I18N[state.lang];
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = L.dir;
+  document.body.style.fontFamily = ""; // font stack handles both scripts
+  els.langBtn.textContent = L.toggle;
+  els.langBtn.setAttribute("aria-label", L.toggleLabel);
+  els.search.placeholder = L.search;
+  els.search.setAttribute("aria-label", L.search);
+  els.clear.setAttribute("aria-label", L.clear);
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = L[el.dataset.i18n]);
+  $("hours").textContent = CONFIG.hours[state.lang];
+  $("copy").textContent = "© " + new Date().getFullYear() + " NARMELA CAFFE";
+  $("address").textContent = CONFIG.address[state.lang];
+  $("visitAddress").textContent = CONFIG.address[state.lang];
+  $("phoneBox").hidden = !CONFIG.phones.length;
+  $("phoneList").innerHTML = CONFIG.phones.map(n => `<a class="phone" href="tel:${esc(n.replace(/\s/g, ""))}">${esc(n)}</a>`).join("");
+  document.title = "NARMELA CAFFE — " + (state.lang === "fa" ? "منو" : "Menu");
+  renderChips();
+  renderMenu();
+}
+
+function resetFilters(){
+  state.query = ""; state.cat = "all"; state.onlyAvail = false;
+  els.search.value = ""; els.clear.classList.remove("show");
+  els.avail.setAttribute("aria-pressed", "false");
+  markChips(); renderMenu();
+}
+
+/* =====================================================================
+   9. EVENTS
+   ===================================================================== */
+els.langBtn.addEventListener("click", () => {
+  state.lang = state.lang === "fa" ? "en" : "fa";
+  try { localStorage.setItem("narmela-lang", state.lang); } catch (e) {}
+  applyLanguage();
+});
+
+els.search.addEventListener("input", e => {
+  state.query = e.target.value;
+  els.clear.classList.toggle("show", !!state.query);
+  renderMenu();
+});
+els.clear.addEventListener("click", () => {
+  els.search.value = ""; state.query = ""; els.clear.classList.remove("show");
+  renderMenu(); els.search.focus();
+});
+
+els.chips.addEventListener("click", e => {
+  const btn = e.target.closest(".chip"); if (!btn) return;
+  state.cat = btn.dataset.cat;
+  markChips(); renderMenu();
+  window.scrollTo({ top: Math.max(0, els.controls.offsetTop - 6), behavior: "smooth" });
+});
+
+els.avail.addEventListener("click", () => {
+  state.onlyAvail = !state.onlyAvail;
+  els.avail.setAttribute("aria-pressed", String(state.onlyAvail));
+  renderMenu();
+});
+
+// Subtle divider under the sticky bar once the page is scrolled
+const io = new IntersectionObserver(([en]) => els.controls.classList.toggle("stuck", !en.isIntersecting), { rootMargin: "-1px 0px 0px 0px", threshold: 1 });
+const sentinel = document.createElement("div"); sentinel.style.height = "1px";
+els.controls.before(sentinel); io.observe(sentinel);
+
+/* =====================================================================
+   10. START
+   ===================================================================== */
+const enterCafeButton = $("enterCafe");
+enterCafeButton.addEventListener("click", () => {
+  const gate = $("entryScreen");
+  const content = $("siteContent");
+  gate.hidden = true;
+  content.hidden = false;
+  window.scrollTo({ top: 0, behavior: "auto" });
+});
+$("gmapBtn").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(CONFIG.address.fa);
+$("mapBtn").href = CONFIG.mapUrl; $("reviewsBtn").href = CONFIG.mapUrl;
+applyLanguage();
+</script>
+</body>
+</html>
